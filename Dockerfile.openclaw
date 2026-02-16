@@ -2,7 +2,7 @@ FROM node:22-bookworm-slim
 
 # Build tools for native modules (node-llama-cpp), curl for healthcheck, git for npm
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl git build-essential cmake python3 \
+    curl git build-essential cmake python3 openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Install OpenClaw globally

@@ -83,6 +83,9 @@ write_profile() {
   if [ ! -f "${config_path}" ]; then
     cat > "${config_path}" << PROFEOF
 {
+  "gateway": {
+    "mode": "local"
+  },
   "auth": {
     "anthropic": {
       "apiKey": "${ANTHROPIC_API_KEY:-}"

@@ -1,0 +1,29 @@
+{
+  "name": "clawgateway",
+  "version": "0.1.0",
+  "description": "Enterprise & marketplace auth gateway for OpenClaw with SSO routing",
+  "type": "module",
+  "bin": {
+    "clawgateway": "./bin/clawgateway.mjs"
+  },
+  "main": "./src/index.mjs",
+  "scripts": {
+    "start": "node bin/clawgateway.mjs",
+    "dev": "node --watch bin/clawgateway.mjs"
+  },
+  "keywords": [
+    "openclaw",
+    "gateway",
+    "sso",
+    "okta",
+    "workos",
+    "descope",
+    "twitter",
+    "reverse-proxy",
+    "websocket"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

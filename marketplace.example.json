@@ -1,0 +1,31 @@
+{
+  "port": 8422,
+  "sessionSecret": "CHANGE-ME-generate-a-random-secret-at-least-32-chars",
+  "mode": "marketplace",
+  "studioUpstream": "http://127.0.0.1:3000",
+  "callbackUrl": "http://localhost:8422/auth/callback",
+
+  "auth": [
+    {
+      "provider": "twitter",
+      "clientId": "your-twitter-client-id",
+      "clientSecret": "your-twitter-client-secret"
+    }
+  ],
+
+  "profiles": {
+    "coding-assistant": {
+      "upstream": "http://127.0.0.1:18789",
+      "description": "Full-stack coding assistant with exec access",
+      "default": true
+    },
+    "research-bot": {
+      "upstream": "http://127.0.0.1:18790",
+      "description": "Read-only research assistant with web access"
+    },
+    "support-agent": {
+      "upstream": "http://127.0.0.1:18791",
+      "description": "Customer support bot with knowledge base"
+    }
+  }
+}

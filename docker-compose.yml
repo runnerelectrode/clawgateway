@@ -1,0 +1,137 @@
+version: "3.8"
+
+services:
+  # --- Init container: generates configs and tokens ---
+  init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ["/bin/sh", "/app/docker/init.sh"]
+    volumes:
+      - gateway-data:/data
+      - openclaw-data:/root/.openclaw
+    env_file: .env
+    restart: "no"
+
+  # --- OpenClaw instances (one per role) ---
+  openclaw-viewer:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
+    command:
+      - gateway
+      - --profile
+      - viewer
+      - --port
+      - "18789"
+      - --auth
+      - token
+      - --token
+      - ${OPENCLAW_TOKEN_VIEWER}
+    volumes:
+      - openclaw-data:/root/.openclaw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  openclaw-member:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
+    command:
+      - gateway
+      - --profile
+      - member
+      - --port
+      - "18790"
+      - --auth
+      - token
+      - --token
+      - ${OPENCLAW_TOKEN_MEMBER}
+    volumes:
+      - openclaw-data:/root/.openclaw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18790/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  openclaw-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
+    command:
+      - gateway
+      - --profile
+      - admin
+      - --port
+      - "18791"
+      - --auth
+      - token
+      - --token
+      - ${OPENCLAW_TOKEN_ADMIN}
+    volumes:
+      - openclaw-data:/root/.openclaw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18791/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # --- OpenClaw Studio ---
+  studio:
+    build:
+      context: .
+      dockerfile: Dockerfile.studio
+    volumes:
+      - openclaw-data:/root/.openclaw
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # --- ClawGateway (auth + routing) ---
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${GATEWAY_PORT:-8422}:8422"
+    volumes:
+      - gateway-data:/data
+      - openclaw-data:/root/.openclaw
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      studio:
+        condition: service_started
+      openclaw-viewer:
+        condition: service_healthy
+      openclaw-member:
+        condition: service_healthy
+      openclaw-admin:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  gateway-data:
+  openclaw-data:

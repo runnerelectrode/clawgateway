@@ -5,10 +5,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl git build-essential cmake python3 openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Force HTTPS for GitHub and install OpenClaw in one layer
-RUN git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" \
-    && git config --global url."https://github.com/".insteadOf "git@github.com:" \
-    && npm install -g openclaw@latest
+# Force all git SSH URLs to use HTTPS (no SSH keys in container)
+RUN printf '[url "https://github.com/"]\n\tinsteadOf = ssh://git@github.com/\n\tinsteadOf = git@github.com:\n' > /root/.gitconfig \
+    && cat /root/.gitconfig \
+    && git config --global --list
+
+# Install OpenClaw globally
+RUN npm install -g openclaw@latest
 
 VOLUME /root/.openclaw
 

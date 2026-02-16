@@ -1,7 +1,7 @@
 FROM node:22-alpine
 
-# curl for healthcheck probes
-RUN apk add --no-cache curl
+# curl for healthcheck probes, git for npm install
+RUN apk add --no-cache curl git
 
 # Install OpenClaw globally
 RUN npm install -g openclaw@latest

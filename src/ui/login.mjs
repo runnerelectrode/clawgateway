@@ -2,17 +2,20 @@ const PROVIDER_ICONS = {
   okta: 'shield',
   workos: 'building',
   descope: 'key',
-  twitter: 'bird'
+  twitter: 'bird',
+  google: 'search'
 };
 
 const PROVIDER_COLORS = {
   okta: '#007dc1',
   workos: '#6363f1',
   descope: '#00b4d8',
-  twitter: '#1da1f2'
+  twitter: '#1da1f2',
+  google: '#4285f4'
 };
 
 const MARKETPLACE_PROVIDERS = new Set(['twitter']);
+const ENTERPRISE_PROVIDERS = new Set(['google', 'okta', 'workos', 'descope']);
 
 export function renderLoginPage(config, providers, error) {
   const mode = config.mode || 'enterprise';
@@ -69,10 +72,12 @@ export function renderLoginPage(config, providers, error) {
     ? `<div class="error">${escapeHtml(error)}</div>`
     : '';
 
+  const tagline = 'Enterprise OpenClaw with RBAC --profile instances';
+  const description = 'ClawGateway routes to role based instances with pre-defined permissions. Easily share within organizations or create instances for friends.';
   const subtitle = mode === 'marketplace'
     ? 'Choose a profile to get started'
     : mode === 'dual'
-      ? 'Choose how to sign in'
+      ? tagline
       : 'Sign in to continue';
 
   return `<!DOCTYPE html>
@@ -205,6 +210,11 @@ export function renderLoginPage(config, providers, error) {
       transition: all 0.15s;
       user-select: none;
     }
+    .desc {
+      color: #777; font-size: 0.8rem; line-height: 1.5;
+      text-align: center; margin-bottom: 1.5rem;
+      max-width: 380px; margin-left: auto; margin-right: auto;
+    }
     .mode-tab:hover { color: #e0e0e0; }
     .mode-tab.active {
       color: #fff;
@@ -232,14 +242,15 @@ export function renderLoginPage(config, providers, error) {
     </div>
     ${errorHtml}
     ${mode === 'dual' ? `
+      <p class="desc">${description}</p>
       <div class="mode-tabs">
         <div class="mode-tab active" onclick="switchLoginTab('enterprise', this)">Enterprise</div>
-        <div class="mode-tab" onclick="switchLoginTab('marketer', this)">Marketer</div>
+        <div class="mode-tab" onclick="switchLoginTab('individual', this)">Individual</div>
       </div>
       <div class="mode-panel active" id="panel-enterprise">
         ${enterpriseButtons || '<p style="color:#666;text-align:center;">No enterprise providers configured</p>'}
       </div>
-      <div class="mode-panel" id="panel-marketer">
+      <div class="mode-panel" id="panel-individual">
         <div class="profiles">
           <h2>Choose a Profile</h2>
           ${marketerCards}
@@ -250,7 +261,7 @@ export function renderLoginPage(config, providers, error) {
           document.querySelectorAll('.mode-tab').forEach(function(t) { t.classList.remove('active'); });
           document.querySelectorAll('.mode-panel').forEach(function(p) { p.classList.remove('active'); });
           el.classList.add('active');
-          document.getElementById('panel-' + tab).classList.add('active');
+          document.getElementById('panel-' + tab)?.classList.add('active');
         }
       </script>
     ` : ''}

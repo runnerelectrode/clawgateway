@@ -118,6 +118,25 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
 
     // --- Public routes ---
 
+    // Sitemap for SEO
+    if (path === '/sitemap.xml' && req.method === 'GET') {
+      const baseUrl = config.callbackUrl ? config.callbackUrl.replace('/auth/callback', '') : `https://${req.headers.host}`;
+      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${baseUrl}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>${baseUrl}/login</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+</urlset>`;
+      res.writeHead(200, { 'Content-Type': 'application/xml' });
+      return res.end(sitemap);
+    }
+
+    // Robots.txt for SEO
+    if (path === '/robots.txt' && req.method === 'GET') {
+      const baseUrl = config.callbackUrl ? config.callbackUrl.replace('/auth/callback', '') : `https://${req.headers.host}`;
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      return res.end(`User-agent: *\nAllow: /login\nDisallow: /admin\nDisallow: /auth/\nDisallow: /api/\nSitemap: ${baseUrl}/sitemap.xml\n`);
+    }
+
     // Dev auto-login (only when NODE_ENV !== 'production')
     if (path === '/dev/login' && req.method === 'GET' && process.env.NODE_ENV !== 'production') {
       const role = url.searchParams.get('role') || 'admin';

@@ -2,12 +2,14 @@ import { createOktaProvider } from './okta.mjs';
 import { createWorkosProvider } from './workos.mjs';
 import { createDescopeProvider } from './descope.mjs';
 import { createTwitterProvider } from './twitter.mjs';
+import { createGoogleProvider } from './google.mjs';
 
 const FACTORIES = {
   okta: createOktaProvider,
   workos: createWorkosProvider,
   descope: createDescopeProvider,
-  twitter: createTwitterProvider
+  twitter: createTwitterProvider,
+  google: createGoogleProvider
 };
 
 export function createProvider(authConfig, callbackUrl) {

@@ -18,7 +18,7 @@ function validate(config) {
   }
   for (const auth of config.auth) {
     if (!auth.provider) throw new Error('Each auth entry must have a provider field');
-    if (!['okta', 'workos', 'descope', 'twitter'].includes(auth.provider)) {
+    if (!['okta', 'workos', 'descope', 'twitter', 'google'].includes(auth.provider)) {
       throw new Error(`Unknown auth provider: ${auth.provider}`);
     }
     if (!auth.clientId) throw new Error(`${auth.provider}: missing clientId`);

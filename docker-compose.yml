@@ -29,7 +29,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - PORT=8422
-      - GATEWAY_CONFIG={"port":8422,"sessionSecret":"${SESSION_SECRET}","mode":"marketplace","studioUpstream":"http://studio:3000","callbackUrl":"${EXTERNAL_URL:-https://localhost}/auth/callback","devMode":true,"devUser":{"email":"dev@test.local","profile":"research-bot"},"auth":[{"provider":"twitter","clientId":"${AUTH_CLIENT_ID:-placeholder}","clientSecret":"${AUTH_CLIENT_SECRET:-placeholder}"}],"profiles":{"research-bot":{"upstream":"http://openclaw-research:18790","token":"${OPENCLAW_TOKEN}","description":"AI Research Assistant","default":true}}}
+      - GATEWAY_CONFIG={"port":8422,"sessionSecret":"${SESSION_SECRET}","mode":"marketplace","studioUpstream":"http://studio:3000","callbackUrl":"${EXTERNAL_URL:-https://localhost}/auth/callback","auth":[{"provider":"twitter","clientId":"${AUTH_CLIENT_ID}","clientSecret":"${AUTH_CLIENT_SECRET}"}],"profiles":{"research-bot":{"upstream":"http://openclaw-research:18790","token":"${OPENCLAW_TOKEN}","description":"AI Research Assistant","default":true}}}
     depends_on:
       - openclaw-research
       - studio

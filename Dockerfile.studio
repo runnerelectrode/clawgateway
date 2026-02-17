@@ -1,10 +1,26 @@
 FROM node:22-bookworm-slim
 
-# Install OpenClaw Studio at build time (not runtime)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install openclaw-studio CLI, then use it to download the source
 RUN npm install -g openclaw-studio@latest
 
-VOLUME /root/.openclaw
+# Run the installer (downloads source to /openclaw-studio + installs deps)
+RUN openclaw-studio
+
+WORKDIR /openclaw-studio
+
+# Build for production
+RUN npm run build
 
 EXPOSE 3000
 
-CMD ["openclaw-studio", "--run", "--port", "3000"]
+ENV NODE_ENV=production
+
+# At startup, write gateway WS URL to settings and start Next.js
+CMD sh -c '\
+  mkdir -p /root/.openclaw/openclaw-studio && \
+  echo "{\"gateway\":{\"url\":\"${GATEWAY_WS_URL:-ws://localhost:8422/api/gateway/ws}\"}}" > /root/.openclaw/openclaw-studio/settings.json && \
+  npm start'

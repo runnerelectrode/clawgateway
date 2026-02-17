@@ -14,7 +14,17 @@ ENV GIT_CONFIG_COUNT=2 \
 
 RUN npm install -g openclaw@latest
 
-VOLUME /root/.openclaw
 
-ENTRYPOINT ["openclaw"]
-CMD ["gateway", "--port", "18789"]
+ENV OPENCLAW_PROFILE=default
+ENV OPENCLAW_PORT=18789
+
+ENV OPENCLAW_BIND=lan
+
+# Write OpenClaw config with allowed origins for ClawGateway proxy
+RUN mkdir -p /root/.openclaw && \
+    echo '{"gateway":{"controlUi":{"allowedOrigins":["%%ALLOWED_ORIGIN%%"]}}}' > /root/.openclaw/openclaw.json
+
+CMD sh -c '\
+  sed -i "s|%%ALLOWED_ORIGIN%%|${ALLOWED_ORIGIN:-*}|g" /root/.openclaw/openclaw.json && \
+  echo "{\"gateway\":{\"mode\":\"local\"}}" > /root/.openclaw/openclaw-${OPENCLAW_PROFILE}.json && \
+  openclaw gateway --profile $OPENCLAW_PROFILE --port $OPENCLAW_PORT --bind $OPENCLAW_BIND --allow-unconfigured'

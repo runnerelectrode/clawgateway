@@ -442,114 +442,121 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
 
   function getGatewayWidget(config, session) {
     const admin = isAdmin(config, session);
-    const displayName = session.name || session.email;
-    const profileOrRole = session.profile || session.role || '';
+    const displayName = (session.name || session.email).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const profileOrRole = (session.profile || session.role || '').replace(/'/g, "\\'");
     const hasApiKeyPlaceholder = (process.env.ANTHROPIC_API_KEY || '').includes('placeholder');
-
-    const adminLinks = admin
-      ? '<a href="/admin" id="cg-admin-link">Admin Panel</a>' : '';
-    const apiKeyBanner = (admin && hasApiKeyPlaceholder)
-      ? '<div id="cg-banner">Set up your Anthropic API key in <a href="/admin">Admin Panel</a> to start chatting with your agents.</div>' : '';
-    const onboarding = `<div id="cg-onboard">Create AI agents, customize their brain, and share them with friends. <span id="cg-onboard-close">&times;</span></div>`;
+    const showApiKeyBanner = admin && hasApiKeyPlaceholder;
+    const badgeClass = admin ? 'cg-badge-admin' : 'cg-badge-profile';
+    const adminLinkHtml = admin
+      ? '<a href="/admin" style="color:#58a6ff;text-decoration:none;font-weight:500;">Admin Panel</a>' : '';
 
     return `<script>(function(){
-      if(document.getElementById('cg-bar'))return;
       var BAR_H = 38;
-      var style = document.createElement('style');
-      style.textContent = \`
-        #cg-bar {
-          position:fixed;top:0;left:0;right:0;z-index:99999;
-          background:#0d0d0d;border-bottom:1px solid #222;
-          padding:0 16px;display:flex;align-items:center;justify-content:space-between;
-          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-          font-size:13px;color:#aaa;height:\${BAR_H}px;
-        }
-        #cg-bar a { color:#58a6ff;text-decoration:none;font-weight:500; }
-        #cg-bar a:hover { text-decoration:underline; }
-        .cg-left,.cg-right { display:flex;align-items:center;gap:10px; }
-        .cg-brand { font-weight:700;color:#fff;font-size:13px;letter-spacing:-0.3px; }
-        .cg-sep { color:#333; }
-        .cg-user { color:#ccc; }
-        .cg-badge {
-          padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;
-          text-transform:uppercase;letter-spacing:0.5px;
-        }
-        .cg-badge-profile { background:#0d2818;color:#3fb950; }
-        .cg-badge-admin { background:#5c1f1f;color:#ff7b72; }
-        #cg-admin-link { margin-right:4px; }
-        .cg-logout {
-          background:none;border:1px solid #333;color:#888;cursor:pointer;
-          font-size:12px;font-family:inherit;padding:3px 10px;border-radius:6px;
-        }
-        .cg-logout:hover { border-color:#555;color:#ccc; }
-        #cg-banner {
-          position:fixed;top:\${BAR_H}px;left:0;right:0;z-index:99998;
-          background:#1a1400;border-bottom:1px solid #3d3000;
-          color:#f0c000;padding:8px 16px;font-size:13px;text-align:center;
-          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-        }
-        #cg-banner a { color:#58a6ff; }
-        #cg-onboard {
-          position:fixed;top:\${BAR_H}px;left:0;right:0;z-index:99997;
-          background:#0d1a2e;border-bottom:1px solid #1a3050;
-          color:#7eb8f0;padding:8px 16px;font-size:13px;text-align:center;
-          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-        }
-        #cg-onboard-close {
-          cursor:pointer;margin-left:12px;color:#4a7aa8;font-size:16px;
-          vertical-align:middle;
-        }
-        #cg-onboard-close:hover { color:#fff; }
-      \`;
-      document.head.appendChild(style);
+      var CG_CSS_ID = 'cg-styles';
+      var CG_BAR_ID = 'cg-bar';
+      var CG_BANNER_ID = 'cg-banner';
+      var CG_ONBOARD_ID = 'cg-onboard';
 
-      var bar = document.createElement('div');
-      bar.id = 'cg-bar';
-      bar.innerHTML = '<div class="cg-left">'
-        + '<span class="cg-brand">ClawGateway</span>'
-        + '<span class="cg-sep">|</span>'
-        + '<span class="cg-user">${displayName.replace(/'/g, "\\'")}</span>'
-        + '<span class="cg-badge ${admin ? 'cg-badge-admin' : 'cg-badge-profile'}">${profileOrRole.replace(/'/g, "\\'")}</span>'
-        + '</div>'
-        + '<div class="cg-right">'
-        + '${adminLinks}'
-        + '<form method="POST" action="/logout" style="margin:0;"><button type="submit" class="cg-logout">Logout</button></form>'
-        + '</div>';
-      document.body.prepend(bar);
+      function injectStyles() {
+        if (document.getElementById(CG_CSS_ID)) return;
+        var s = document.createElement('style');
+        s.id = CG_CSS_ID;
+        s.textContent = '#cg-bar{position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#0d0d0d;border-bottom:1px solid #222;padding:0 16px;display:flex!important;align-items:center;justify-content:space-between;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;font-size:13px;color:#aaa;height:'+BAR_H+'px;box-sizing:border-box;}'
+          + '#cg-bar *{box-sizing:border-box;}'
+          + '#cg-bar a{color:#58a6ff;text-decoration:none;font-weight:500;}'
+          + '#cg-bar a:hover{text-decoration:underline;}'
+          + '.cg-left,.cg-right{display:flex;align-items:center;gap:10px;}'
+          + '.cg-brand{font-weight:700;color:#fff;font-size:13px;letter-spacing:-0.3px;}'
+          + '.cg-sep{color:#333;}'
+          + '.cg-user{color:#ccc;}'
+          + '.cg-badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}'
+          + '.cg-badge-profile{background:#0d2818;color:#3fb950;}'
+          + '.cg-badge-admin{background:#5c1f1f;color:#ff7b72;}'
+          + '.cg-logout{background:none;border:1px solid #333;color:#888;cursor:pointer;font-size:12px;font-family:inherit;padding:3px 10px;border-radius:6px;}'
+          + '.cg-logout:hover{border-color:#555;color:#ccc;}'
+          + '#cg-banner{position:fixed;top:'+BAR_H+'px;left:0;right:0;z-index:2147483646;background:#1a1400;border-bottom:1px solid #3d3000;color:#f0c000;padding:8px 16px;font-size:13px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;}'
+          + '#cg-banner a{color:#58a6ff;}'
+          + '#cg-onboard{position:fixed;left:0;right:0;z-index:2147483645;background:#0d1a2e;border-bottom:1px solid #1a3050;color:#7eb8f0;padding:8px 16px;font-size:13px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;}'
+          + '#cg-onboard-close{cursor:pointer;margin-left:12px;color:#4a7aa8;font-size:16px;vertical-align:middle;}'
+          + '#cg-onboard-close:hover{color:#fff;}';
+        (document.head || document.documentElement).appendChild(s);
+      }
 
-      ${apiKeyBanner ? `
-      var banner = document.createElement('div');
-      banner.id = 'cg-banner';
-      banner.innerHTML = 'Set up your Anthropic API key in <a href="/admin">Admin Panel</a> to start chatting with your agents.';
-      document.body.prepend(banner);
-      ` : ''}
+      function injectBar() {
+        if (document.getElementById(CG_BAR_ID)) return;
+        var bar = document.createElement('div');
+        bar.id = CG_BAR_ID;
+        bar.innerHTML = '<div class="cg-left">'
+          + '<span class="cg-brand">ClawGateway</span>'
+          + '<span class="cg-sep">|</span>'
+          + '<span class="cg-user">${displayName}</span>'
+          + '<span class="cg-badge ${badgeClass}">${profileOrRole}</span>'
+          + '</div>'
+          + '<div class="cg-right">'
+          + '${adminLinkHtml}'
+          + '<form method="POST" action="/logout" style="margin:0;"><button type="submit" class="cg-logout">Logout</button></form>'
+          + '</div>';
+        document.documentElement.appendChild(bar);
+      }
 
-      var onboardKey = 'cg-onboard-dismissed';
-      if (!localStorage.getItem(onboardKey)) {
-        var onboard = document.createElement('div');
-        onboard.id = 'cg-onboard';
-        ${apiKeyBanner ? "onboard.style.top = (BAR_H + 35) + 'px';" : "onboard.style.top = BAR_H + 'px';"}
-        onboard.innerHTML = 'Create AI agents, customize their personality, and share them with anyone. <span id="cg-onboard-close">&times;</span>';
-        document.body.appendChild(onboard);
-        document.getElementById('cg-onboard-close').onclick = function() {
-          onboard.remove();
-          localStorage.setItem(onboardKey, '1');
+      function injectBanner() {
+        ${showApiKeyBanner ? `
+        if (document.getElementById(CG_BANNER_ID)) return;
+        var b = document.createElement('div');
+        b.id = CG_BANNER_ID;
+        b.innerHTML = 'Set up your Anthropic API key in <a href="/admin">Admin Panel</a> to start chatting with your agents.';
+        document.documentElement.appendChild(b);
+        ` : ''}
+      }
+
+      function injectOnboard() {
+        if (document.getElementById(CG_ONBOARD_ID)) return;
+        if (localStorage.getItem('cg-onboard-dismissed')) return;
+        var o = document.createElement('div');
+        o.id = CG_ONBOARD_ID;
+        o.style.top = ${showApiKeyBanner ? '(BAR_H + 37)' : 'BAR_H'} + 'px';
+        o.innerHTML = 'Create AI agents, customize their personality, and share them with anyone. <span id="cg-onboard-close">&times;</span>';
+        document.documentElement.appendChild(o);
+        o.querySelector('#cg-onboard-close').onclick = function() {
+          o.remove();
+          localStorage.setItem('cg-onboard-dismissed', '1');
+          applyOffset();
         };
       }
 
-      // Push page content down
-      var totalOffset = BAR_H;
-      ${apiKeyBanner ? 'totalOffset += 35;' : ''}
-      document.body.style.paddingTop = totalOffset + 'px';
-      setTimeout(function(){
-        document.querySelectorAll('*').forEach(function(el){
-          var s = getComputedStyle(el);
-          if ((s.position === 'fixed' || s.position === 'sticky') && el.id !== 'cg-bar' && el.id !== 'cg-banner' && el.id !== 'cg-onboard') {
-            var cur = parseInt(s.top) || 0;
-            el.style.top = (cur + totalOffset) + 'px';
-          }
-        });
-      }, 200);
+      function applyOffset() {
+        var offset = BAR_H;
+        ${showApiKeyBanner ? "if (document.getElementById(CG_BANNER_ID)) offset += 37;" : ""}
+        if (document.getElementById(CG_ONBOARD_ID)) offset += 37;
+        document.documentElement.style.setProperty('--cg-offset', offset + 'px');
+        if (document.body) document.body.style.paddingTop = offset + 'px';
+      }
+
+      function inject() {
+        injectStyles();
+        injectBar();
+        injectBanner();
+        injectOnboard();
+        applyOffset();
+      }
+
+      // Initial inject when DOM is ready
+      if (document.body) inject();
+      else document.addEventListener('DOMContentLoaded', inject);
+
+      // Re-inject every 500ms if SPA removes our elements
+      setInterval(function() {
+        if (!document.getElementById(CG_BAR_ID)) inject();
+      }, 500);
+
+      // Also watch for body mutations (Next.js hydration)
+      var obs = new MutationObserver(function() {
+        if (!document.getElementById(CG_BAR_ID)) inject();
+      });
+      if (document.body) obs.observe(document.body, { childList: true });
+      else document.addEventListener('DOMContentLoaded', function() {
+        obs.observe(document.body, { childList: true });
+      });
     })();</script>`;
   }
 

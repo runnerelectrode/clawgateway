@@ -1,8 +1,3 @@
 {$CADDY_DOMAIN:143-198-141-76.nip.io} {
-	tls {
-		issuer acme {
-			dir https://acme.zerossl.com/v2/DV90
-		}
-	}
 	reverse_proxy gateway:8422
 }

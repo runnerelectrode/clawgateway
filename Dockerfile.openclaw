@@ -23,6 +23,6 @@ ENV OPENCLAW_BIND=lan
 RUN mkdir -p /root/.openclaw
 
 CMD sh -c '\
-  echo "{\"gateway\":{\"mode\":\"local\",\"trustedProxies\":[\"172.16.0.0/12\",\"10.0.0.0/8\",\"192.168.0.0/16\"],\"controlUi\":{\"allowedOrigins\":[\"${ALLOWED_ORIGIN:-*}\"]}}}" > /root/.openclaw/openclaw-${OPENCLAW_PROFILE}.json && \
+  echo "{\"gateway\":{\"mode\":\"local\",\"trustedProxies\":[\"172.16.0.0/12\",\"10.0.0.0/8\",\"192.168.0.0/16\"],\"controlUi\":{\"allowInsecureAuth\":true,\"allowedOrigins\":[\"${ALLOWED_ORIGIN:-*}\"]}}}" > /root/.openclaw/openclaw-${OPENCLAW_PROFILE}.json && \
   cp /root/.openclaw/openclaw-${OPENCLAW_PROFILE}.json /root/.openclaw/openclaw.json && \
   openclaw gateway --profile $OPENCLAW_PROFILE --port $OPENCLAW_PORT --bind $OPENCLAW_BIND --allow-unconfigured'

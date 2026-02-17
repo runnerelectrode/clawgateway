@@ -1,3 +1,4 @@
 {$CADDY_DOMAIN:143-198-141-76.nip.io} {
+	tls internal
 	reverse_proxy gateway:8422
 }

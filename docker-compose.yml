@@ -8,7 +8,7 @@ services:
       - OPENCLAW_PROFILE=research-bot
       - OPENCLAW_PORT=18790
       - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_TOKEN}
-      - ALLOWED_ORIGIN=${EXTERNAL_URL:-http://localhost:8422}
+      - ALLOWED_ORIGIN=${EXTERNAL_URL:-https://localhost}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-sk-ant-placeholder}
     restart: unless-stopped
 
@@ -18,7 +18,7 @@ services:
       context: .
       dockerfile: Dockerfile.studio
     environment:
-      - GATEWAY_WS_URL=${GATEWAY_WS_URL:-ws://localhost:8422/api/gateway/ws}
+      - GATEWAY_WS_URL=${GATEWAY_WS_URL:-wss://localhost/api/gateway/ws}
     restart: unless-stopped
 
   # --- ClawGateway (auth + routing) ---
@@ -26,12 +26,28 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "${GATEWAY_PORT:-8422}:8422"
     environment:
       - PORT=8422
-      - GATEWAY_CONFIG={"port":8422,"sessionSecret":"${SESSION_SECRET}","mode":"marketplace","studioUpstream":"http://studio:3000","callbackUrl":"${EXTERNAL_URL:-http://localhost:8422}/auth/callback","devMode":true,"devUser":{"email":"dev@test.local","profile":"research-bot"},"auth":[{"provider":"twitter","clientId":"${AUTH_CLIENT_ID:-placeholder}","clientSecret":"${AUTH_CLIENT_SECRET:-placeholder}"}],"profiles":{"research-bot":{"upstream":"http://openclaw-research:18790","token":"${OPENCLAW_TOKEN}","description":"AI Research Assistant","default":true}}}
+      - GATEWAY_CONFIG={"port":8422,"sessionSecret":"${SESSION_SECRET}","mode":"marketplace","studioUpstream":"http://studio:3000","callbackUrl":"${EXTERNAL_URL:-https://localhost}/auth/callback","devMode":true,"devUser":{"email":"dev@test.local","profile":"research-bot"},"auth":[{"provider":"twitter","clientId":"${AUTH_CLIENT_ID:-placeholder}","clientSecret":"${AUTH_CLIENT_SECRET:-placeholder}"}],"profiles":{"research-bot":{"upstream":"http://openclaw-research:18790","token":"${OPENCLAW_TOKEN}","description":"AI Research Assistant","default":true}}}
     depends_on:
       - openclaw-research
       - studio
     restart: unless-stopped
+
+  # --- Caddy (HTTPS reverse proxy) ---
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - gateway
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:

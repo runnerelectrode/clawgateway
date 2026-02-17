@@ -30,6 +30,8 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
     if (!session) return false;
     if (session.role === 'admin') return true;
     if (config.admins && config.admins.includes(session.email)) return true;
+    // In marketplace/dual mode, all authenticated users are admins of their session
+    if ((config.mode === 'marketplace' || config.mode === 'dual') && !config.admins) return true;
     return false;
   }
 

@@ -280,7 +280,21 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
     // --- Authenticated routes ---
 
     const cookies = parseCookies(req.headers.cookie);
-    const session = verifySession(config.sessionSecret, cookies[SESSION_COOKIE]);
+    let session = verifySession(config.sessionSecret, cookies[SESSION_COOKIE]);
+
+    // devMode: auto-login with devUser if no session
+    if (!session && config.devMode && config.devUser) {
+      const dev = config.devUser;
+      setSessionCookie(res, config.sessionSecret, {
+        email: dev.email || 'admin@test.local',
+        name: (dev.email || 'admin').split('@')[0],
+        provider: 'dev',
+        role: dev.role || 'admin',
+        profile: dev.profile || null,
+        groups: dev.groups || ['Engineering']
+      }, isSecure(config));
+      return redirect(res, path);
+    }
 
     if (!session) {
       if (req.headers.accept?.includes('application/json') || path.startsWith('/api/') || path.startsWith('/admin/')) {

@@ -67,7 +67,9 @@ if [ ! -f "${GATEWAY_CONFIG}" ]; then
       "description": "Full access with elevated permissions"
     }
   },
-  "admins": ["${ADMIN_EMAIL:-admin@example.com}"]
+  "admins": ["${ADMIN_EMAIL:-admin@example.com}"],
+  "devMode": ${DEV_MODE:-false},
+  "devUser": { "email": "${DEV_USER_EMAIL:-admin@test.local}", "role": "${DEV_USER_ROLE:-admin}" }
 }
 GWEOF
   echo "[init] Created ${GATEWAY_CONFIG}"

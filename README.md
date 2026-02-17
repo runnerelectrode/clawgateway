@@ -1,10 +1,14 @@
-# ClawGateway
+<p align="center">
+  <img src="src/assets/logo.png" alt="ClawGateway" width="200">
+</p>
 
-Enterprise auth gateway for [OpenClaw](https://github.com/openclaw/openclaw). Sits in front of OpenClaw Studio and routes authenticated users to role-scoped OpenClaw instances via SSO.
+<h1 align="center">ClawGateway</h1>
+
+<p align="center">Enterprise auth gateway for <a href="https://github.com/openclaw/openclaw">OpenClaw</a>. Sits in front of OpenClaw Studio and routes authenticated users to role-scoped OpenClaw instances via SSO.</p>
 
 ```
 Browser → ClawGateway (:8422)
-  ├── /login, /auth/*     → SSO (Okta, WorkOS, Descope, Twitter)
+  ├── /login, /auth/*     → SSO (Google, Okta, WorkOS, Descope, Twitter)
   ├── /admin              → Admin dashboard (API keys, models, tools)
   ├── /* (authenticated)  → Proxy to OpenClaw Studio (:3000)
   └── /api/gateway/ws     → WebSocket → OpenClaw instance by role
@@ -15,7 +19,7 @@ Browser → ClawGateway (:8422)
 
 ## Features
 
-- **SSO Authentication** — Okta, WorkOS, Descope OIDC + Twitter OAuth 2.0 with PKCE
+- **SSO Authentication** — Google, Okta, WorkOS, Descope OIDC + Twitter OAuth 2.0 with PKCE
 - **Role-based Routing** — IDP groups mapped to roles, each role routes to a separate OpenClaw instance
 - **Marketplace Mode** — Twitter login + pre-built bot profiles for public-facing deployments
 - **Admin Dashboard** — Configure API keys, models, and tool permissions per role at `/admin`
@@ -170,7 +174,12 @@ clawgateway/
 │   │   ├── okta.mjs             # Okta OIDC
 │   │   ├── workos.mjs           # WorkOS SSO
 │   │   ├── descope.mjs          # Descope OIDC
+│   │   ├── google.mjs            # Google OAuth 2.0
 │   │   └── twitter.mjs          # Twitter OAuth 2.0 + PKCE
+│   ├── assets/
+│   │   ├── logo.png             # Full-size logo
+│   │   ├── logo-128.png         # Login page logo (128x128)
+│   │   └── favicon.png          # Favicon (64x64)
 │   └── ui/
 │       ├── login.mjs            # Login page
 │       └── admin.mjs            # Admin dashboard

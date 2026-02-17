@@ -1,6 +1,14 @@
 import { URL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { generatePKCE } from './auth/twitter.mjs';
 import { resolveRole } from './auth/index.mjs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const FAVICON = readFileSync(join(__dirname, 'assets', 'favicon.png'));
+const LOGO_128 = readFileSync(join(__dirname, 'assets', 'logo-128.png'));
+const LOGO_FULL = readFileSync(join(__dirname, 'assets', 'logo.png'));
 import {
   parseCookies, verifySession, verifyState,
   setSessionCookie, setStateCookie, clearCookies,
@@ -117,6 +125,20 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
     const path = url.pathname;
 
     // --- Public routes ---
+
+    // Static assets (logo, favicon)
+    if (path === '/favicon.ico' || path === '/favicon.png') {
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' });
+      return res.end(FAVICON);
+    }
+    if (path === '/logo.png') {
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' });
+      return res.end(LOGO_FULL);
+    }
+    if (path === '/logo-128.png') {
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' });
+      return res.end(LOGO_128);
+    }
 
     // Sitemap for SEO
     if (path === '/sitemap.xml' && req.method === 'GET') {

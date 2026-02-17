@@ -85,6 +85,7 @@ export function renderLoginPage(config, providers, error) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon.png">
   <title>ClawGateway - Sign In</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -105,6 +106,11 @@ export function renderLoginPage(config, providers, error) {
     .logo {
       text-align: center;
       margin-bottom: 2rem;
+    }
+    .logo img {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 0.75rem;
     }
     .logo h1 {
       font-size: 1.5rem;
@@ -237,6 +243,7 @@ export function renderLoginPage(config, providers, error) {
 <body>
   <div class="container">
     <div class="logo">
+      <img src="/logo-128.png" alt="ClawGateway" width="80" height="80">
       <h1>ClawGateway</h1>
       <p>${subtitle}</p>
     </div>

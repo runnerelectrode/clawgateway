@@ -72,6 +72,7 @@ export function proxyWebSocket(req, socket, head, upstreamUrl, extraHeaders = {}
     ...stripHopHeaders(req.headers),
     ...extraHeaders,
     host: upstream.host,
+    origin: `http://${upstream.host}`,
     connection: 'Upgrade',
     upgrade: 'websocket'
   };

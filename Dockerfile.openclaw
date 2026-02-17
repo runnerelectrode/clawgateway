@@ -20,11 +20,9 @@ ENV OPENCLAW_PORT=18789
 
 ENV OPENCLAW_BIND=lan
 
-# Write OpenClaw config with allowed origins for ClawGateway proxy
-RUN mkdir -p /root/.openclaw && \
-    echo '{"gateway":{"controlUi":{"allowedOrigins":["%%ALLOWED_ORIGIN%%"]}}}' > /root/.openclaw/openclaw.json
+RUN mkdir -p /root/.openclaw
 
 CMD sh -c '\
-  sed -i "s|%%ALLOWED_ORIGIN%%|${ALLOWED_ORIGIN:-*}|g" /root/.openclaw/openclaw.json && \
-  echo "{\"gateway\":{\"mode\":\"local\"}}" > /root/.openclaw/openclaw-${OPENCLAW_PROFILE}.json && \
+  echo "{\"gateway\":{\"mode\":\"local\",\"controlUi\":{\"allowedOrigins\":[\"${ALLOWED_ORIGIN:-*}\"]}}}" > /root/.openclaw/openclaw-${OPENCLAW_PROFILE}.json && \
+  cp /root/.openclaw/openclaw-${OPENCLAW_PROFILE}.json /root/.openclaw/openclaw.json && \
   openclaw gateway --profile $OPENCLAW_PROFILE --port $OPENCLAW_PORT --bind $OPENCLAW_BIND --allow-unconfigured'

@@ -19,6 +19,7 @@ services:
       dockerfile: Dockerfile.studio
     environment:
       - GATEWAY_WS_URL=${GATEWAY_WS_URL:-wss://localhost/api/gateway/ws}
+      - GATEWAY_TOKEN=${OPENCLAW_TOKEN}
     restart: unless-stopped
 
   # --- ClawGateway (auth + routing) ---

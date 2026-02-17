@@ -22,5 +22,5 @@ ENV NODE_ENV=production
 # At startup, write gateway WS URL to settings and start Next.js
 CMD sh -c '\
   mkdir -p /root/.openclaw/openclaw-studio && \
-  echo "{\"gateway\":{\"url\":\"${GATEWAY_WS_URL:-ws://localhost:8422/api/gateway/ws}\"}}" > /root/.openclaw/openclaw-studio/settings.json && \
+  echo "{\"gateway\":{\"url\":\"${GATEWAY_WS_URL:-ws://localhost:8422/api/gateway/ws}\",\"token\":\"${GATEWAY_TOKEN:-}\"}}" > /root/.openclaw/openclaw-studio/settings.json && \
   npm start'

@@ -1,113 +1,24 @@
-version: "3.8"
-
 services:
-  # --- Init container: generates configs and tokens ---
-  init:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    entrypoint: ["/bin/sh", "/app/docker/init.sh"]
-    volumes:
-      - gateway-data:/data
-      - openclaw-data:/root/.openclaw
-    env_file: .env
-    restart: "no"
-
-  # --- OpenClaw instances (one per role) ---
-  openclaw-viewer:
+  # --- Single OpenClaw instance (research bot) ---
+  openclaw-research:
     build:
       context: .
       dockerfile: Dockerfile.openclaw
-    command:
-      - gateway
-      - --profile
-      - viewer
-      - --port
-      - "18789"
-      - --auth
-      - token
-      - --token
-      - ${OPENCLAW_TOKEN_VIEWER}
-      - --allow-unconfigured
-    volumes:
-      - openclaw-data:/root/.openclaw
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    depends_on:
-      init:
-        condition: service_completed_successfully
+    environment:
+      - OPENCLAW_PROFILE=research-bot
+      - OPENCLAW_PORT=18790
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_TOKEN}
+      - ALLOWED_ORIGIN=${EXTERNAL_URL:-http://localhost:8422}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-sk-ant-placeholder}
     restart: unless-stopped
 
-  openclaw-member:
-    build:
-      context: .
-      dockerfile: Dockerfile.openclaw
-    command:
-      - gateway
-      - --profile
-      - member
-      - --port
-      - "18790"
-      - --auth
-      - token
-      - --token
-      - ${OPENCLAW_TOKEN_MEMBER}
-      - --allow-unconfigured
-    volumes:
-      - openclaw-data:/root/.openclaw
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:18790/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    depends_on:
-      init:
-        condition: service_completed_successfully
-    restart: unless-stopped
-
-  openclaw-admin:
-    build:
-      context: .
-      dockerfile: Dockerfile.openclaw
-    command:
-      - gateway
-      - --profile
-      - admin
-      - --port
-      - "18791"
-      - --auth
-      - token
-      - --token
-      - ${OPENCLAW_TOKEN_ADMIN}
-      - --allow-unconfigured
-    volumes:
-      - openclaw-data:/root/.openclaw
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:18791/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    depends_on:
-      init:
-        condition: service_completed_successfully
-    restart: unless-stopped
-
-  # --- OpenClaw Studio ---
+  # --- OpenClaw Studio (production build) ---
   studio:
     build:
       context: .
       dockerfile: Dockerfile.studio
-    volumes:
-      - openclaw-data:/root/.openclaw
-    depends_on:
-      init:
-        condition: service_completed_successfully
+    environment:
+      - GATEWAY_WS_URL=${GATEWAY_WS_URL:-ws://localhost:8422/api/gateway/ws}
     restart: unless-stopped
 
   # --- ClawGateway (auth + routing) ---
@@ -117,24 +28,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - "${GATEWAY_PORT:-8422}:8422"
-    volumes:
-      - gateway-data:/data
-      - openclaw-data:/root/.openclaw
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=8422
+      - GATEWAY_CONFIG={"port":8422,"sessionSecret":"${SESSION_SECRET}","mode":"marketplace","studioUpstream":"http://studio:3000","devMode":true,"devUser":{"email":"dev@test.local","profile":"research-bot"},"auth":[{"provider":"twitter","clientId":"${AUTH_CLIENT_ID:-placeholder}","clientSecret":"${AUTH_CLIENT_SECRET:-placeholder}"}],"profiles":{"research-bot":{"upstream":"http://openclaw-research:18790","token":"${OPENCLAW_TOKEN}","description":"AI Research Assistant","default":true}}}
     depends_on:
-      init:
-        condition: service_completed_successfully
-      studio:
-        condition: service_started
-      openclaw-viewer:
-        condition: service_healthy
-      openclaw-member:
-        condition: service_healthy
-      openclaw-admin:
-        condition: service_healthy
+      - openclaw-research
+      - studio
     restart: unless-stopped
-
-volumes:
-  gateway-data:
-  openclaw-data:

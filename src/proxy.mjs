@@ -26,6 +26,11 @@ export function proxyHttp(req, res, upstreamUrl, extraHeaders = {}, injectHtml =
     host: upstream.host
   };
 
+  // When injecting HTML, disable compression so we can append to the response
+  if (injectHtml) {
+    delete headers['accept-encoding'];
+  }
+
   const proxyReq = http.request({
     hostname: upstream.hostname,
     port: upstream.port || 80,
@@ -36,9 +41,10 @@ export function proxyHttp(req, res, upstreamUrl, extraHeaders = {}, injectHtml =
     const resHeaders = stripHopHeaders(proxyRes.headers);
     const isHtml = (resHeaders['content-type'] || '').includes('text/html');
 
-    // If injecting HTML, remove content-length (we're adding bytes)
+    // If injecting HTML, remove content-length and content-encoding (we're adding bytes)
     if (injectHtml && isHtml) {
       delete resHeaders['content-length'];
+      delete resHeaders['content-encoding'];
     }
 
     res.writeHead(proxyRes.statusCode, resHeaders);

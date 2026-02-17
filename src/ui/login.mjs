@@ -12,8 +12,12 @@ const PROVIDER_COLORS = {
   twitter: '#1da1f2'
 };
 
+const MARKETPLACE_PROVIDERS = new Set(['twitter']);
+
 export function renderLoginPage(config, providers, error) {
   const mode = config.mode || 'enterprise';
+
+  // All provider buttons (for enterprise / marketplace single-mode)
   const providerButtons = Object.values(providers).map(p => {
     const color = PROVIDER_COLORS[p.name] || '#333';
     return `<a href="/auth/${p.name}" class="btn" style="background:${color}">
@@ -21,6 +25,7 @@ export function renderLoginPage(config, providers, error) {
     </a>`;
   }).join('\n');
 
+  // Profile cards for marketplace mode (uses all providers)
   const profileCards = mode === 'marketplace' && config.profiles
     ? Object.entries(config.profiles).map(([id, p]) =>
       `<div class="profile-card${p.default ? ' default' : ''}">
@@ -35,9 +40,40 @@ export function renderLoginPage(config, providers, error) {
     ).join('\n')
     : '';
 
+  // Dual mode: split providers and build separate sections
+  const ssoProviders = Object.values(providers).filter(p => !MARKETPLACE_PROVIDERS.has(p.name));
+  const mktProviders = Object.values(providers).filter(p => MARKETPLACE_PROVIDERS.has(p.name));
+
+  const enterpriseButtons = ssoProviders.map(p => {
+    const color = PROVIDER_COLORS[p.name] || '#333';
+    return `<a href="/auth/${p.name}" class="btn" style="background:${color}">
+      Sign in with ${p.displayName}
+    </a>`;
+  }).join('\n');
+
+  const marketerCards = mode === 'dual' && config.profiles
+    ? Object.entries(config.profiles).map(([id, p]) =>
+      `<div class="profile-card${p.default ? ' default' : ''}">
+        <h3>${id.replace(/-/g, ' ')}</h3>
+        <p>${p.description || ''}</p>
+        ${mktProviders.map(prov =>
+          `<a href="/auth/${prov.name}?profile=${encodeURIComponent(id)}" class="btn-sm" style="background:${PROVIDER_COLORS[prov.name] || '#333'}">
+            ${prov.displayName}
+          </a>`
+        ).join(' ')}
+      </div>`
+    ).join('\n')
+    : '';
+
   const errorHtml = error
     ? `<div class="error">${escapeHtml(error)}</div>`
     : '';
+
+  const subtitle = mode === 'marketplace'
+    ? 'Choose a profile to get started'
+    : mode === 'dual'
+      ? 'Choose how to sign in'
+      : 'Sign in to continue';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -152,12 +188,39 @@ export function renderLoginPage(config, providers, error) {
       border-bottom: 1px solid #333;
     }
     .divider span { padding: 0 0.75rem; }
+    .mode-tabs {
+      display: flex;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid #333;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      color: #888;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .mode-tab:hover { color: #e0e0e0; }
+    .mode-tab.active {
+      color: #fff;
+      border-bottom-color: #58a6ff;
+    }
+    .mode-panel { display: none; }
+    .mode-panel.active { display: block; }
     @media (prefers-color-scheme: light) {
       body { background: #fafafa; color: #222; }
       .logo h1 { color: #111; }
       .profile-card { background: #fff; border-color: #ddd; }
       .profile-card p { color: #666; }
       .error { background: #fff0f0; border-color: #ffcdd2; color: #c62828; }
+      .mode-tab.active { color: #111; border-bottom-color: #0969da; }
+      .mode-tab { color: #666; }
+      .mode-tabs { border-bottom-color: #ddd; }
     }
   </style>
 </head>
@@ -165,9 +228,32 @@ export function renderLoginPage(config, providers, error) {
   <div class="container">
     <div class="logo">
       <h1>ClawGateway</h1>
-      <p>${mode === 'marketplace' ? 'Choose a profile to get started' : 'Sign in to continue'}</p>
+      <p>${subtitle}</p>
     </div>
     ${errorHtml}
+    ${mode === 'dual' ? `
+      <div class="mode-tabs">
+        <div class="mode-tab active" onclick="switchLoginTab('enterprise', this)">Enterprise</div>
+        <div class="mode-tab" onclick="switchLoginTab('marketer', this)">Marketer</div>
+      </div>
+      <div class="mode-panel active" id="panel-enterprise">
+        ${enterpriseButtons || '<p style="color:#666;text-align:center;">No enterprise providers configured</p>'}
+      </div>
+      <div class="mode-panel" id="panel-marketer">
+        <div class="profiles">
+          <h2>Choose a Profile</h2>
+          ${marketerCards}
+        </div>
+      </div>
+      <script>
+        function switchLoginTab(tab, el) {
+          document.querySelectorAll('.mode-tab').forEach(function(t) { t.classList.remove('active'); });
+          document.querySelectorAll('.mode-panel').forEach(function(p) { p.classList.remove('active'); });
+          el.classList.add('active');
+          document.getElementById('panel-' + tab).classList.add('active');
+        }
+      </script>
+    ` : ''}
     ${mode === 'enterprise' ? providerButtons : ''}
     ${mode === 'marketplace' && profileCards ? `
       <div class="profiles">

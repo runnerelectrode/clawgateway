@@ -2,7 +2,7 @@ import { ALL_TOOLS, TOOL_PROFILES, AVAILABLE_MODELS } from '../profiles.mjs';
 
 export function renderAdminPage(config, profileData, auditRecent, session) {
   const mode = config.mode || 'enterprise';
-  const roles = mode === 'enterprise' ? config.roles : config.profiles;
+  const roles = (mode === 'enterprise' || mode === 'dual') ? config.roles : config.profiles;
 
   // --- Role cards with tools ---
   const roleCards = Object.entries(profileData).map(([name, data]) => {
@@ -350,7 +350,7 @@ export function renderAdminPage(config, profileData, auditRecent, session) {
     <div class="stats">
       <div class="stat-card">
         <div class="num">${Object.keys(roles || {}).length}</div>
-        <div class="label">${mode === 'enterprise' ? 'Roles' : 'Profiles'}</div>
+        <div class="label">${mode === 'dual' ? 'Roles + Profiles' : mode === 'enterprise' ? 'Roles' : 'Profiles'}</div>
       </div>
       <div class="stat-card">
         <div class="num">${config.auth?.length || 0}</div>

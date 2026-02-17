@@ -24,7 +24,7 @@ export function createTwitterProvider(config, callbackUrl) {
         response_type: 'code',
         client_id: clientId,
         redirect_uri: callbackUrl,
-        scope: 'users.read tweet.read offline.access',
+        scope: 'users.read tweet.read',
         state,
         code_challenge: pkceChallenge,
         code_challenge_method: 'S256'

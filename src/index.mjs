@@ -56,12 +56,15 @@ export async function startGateway(configPath, portOverride) {
     console.log(`  Port:       ${port}`);
     console.log('  Routes:');
 
-    if (mode === 'enterprise') {
+    if (mode === 'enterprise' || mode === 'dual') {
+      if (mode === 'dual') console.log('  Enterprise Routes:');
       for (const [role, val] of Object.entries(config.roles || {})) {
         const url = typeof val === 'string' ? val : val.upstream;
         console.log(`    ${role.padEnd(12)} → ${url}`);
       }
-    } else {
+    }
+    if (mode === 'marketplace' || mode === 'dual') {
+      if (mode === 'dual') console.log('  Marketplace Profiles:');
       for (const [name, p] of Object.entries(config.profiles || {})) {
         console.log(`    ${name.padEnd(20)} → ${p.upstream}${p.default ? ' (default)' : ''}`);
       }

@@ -42,8 +42,22 @@ function validate(config) {
     if (!config.profiles || typeof config.profiles !== 'object' || Object.keys(config.profiles).length === 0) {
       throw new Error('Marketplace mode requires a non-empty profiles object');
     }
+  } else if (mode === 'dual') {
+    if (!config.roles || typeof config.roles !== 'object' || Object.keys(config.roles).length === 0) {
+      throw new Error('Dual mode requires a non-empty roles object');
+    }
+    if (!config.profiles || typeof config.profiles !== 'object' || Object.keys(config.profiles).length === 0) {
+      throw new Error('Dual mode requires a non-empty profiles object');
+    }
+    for (const [key, val] of Object.entries(config.roles)) {
+      if (typeof val === 'string') {
+        config.roles[key] = { upstream: val, tools: [], description: '', token: '' };
+      } else {
+        if (!val.token) val.token = '';
+      }
+    }
   } else {
-    throw new Error(`Unknown mode: ${mode}. Must be "enterprise" or "marketplace"`);
+    throw new Error(`Unknown mode: ${mode}. Must be "enterprise", "marketplace", or "dual"`);
   }
 
   return { ...config, mode };

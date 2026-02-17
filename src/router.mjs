@@ -38,7 +38,7 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
   }
 
   function getUpstreamForRole(config, role) {
-    if (config.mode === 'enterprise') {
+    if (config.mode === 'enterprise' || config.mode === 'dual') {
       const r = config.roles?.[role];
       if (!r) return null;
       return typeof r === 'string' ? r : r.upstream;
@@ -47,7 +47,7 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
   }
 
   function getUpstreamForProfile(config, profile) {
-    if (config.mode === 'marketplace') {
+    if (config.mode === 'marketplace' || config.mode === 'dual') {
       const p = config.profiles?.[profile];
       return p?.upstream || null;
     }
@@ -55,7 +55,7 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
   }
 
   function getDefaultProfile(config) {
-    if (config.mode !== 'marketplace' || !config.profiles) return null;
+    if ((config.mode !== 'marketplace' && config.mode !== 'dual') || !config.profiles) return null;
     for (const [id, p] of Object.entries(config.profiles)) {
       if (p.default) return id;
     }
@@ -71,6 +71,16 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
       const p = config.profiles?.[session.profile];
       return p?.token || '';
     }
+    if (config.mode === 'dual') {
+      if (session.role) {
+        const r = config.roles?.[session.role];
+        return (r && typeof r === 'object') ? (r.token || '') : '';
+      }
+      if (session.profile) {
+        const p = config.profiles?.[session.profile];
+        return p?.token || '';
+      }
+    }
     return '';
   }
 
@@ -78,7 +88,14 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
     if (config.mode === 'enterprise') {
       return getUpstreamForRole(config, session.role);
     }
-    return getUpstreamForProfile(config, session.profile);
+    if (config.mode === 'marketplace') {
+      return getUpstreamForProfile(config, session.profile);
+    }
+    if (config.mode === 'dual') {
+      if (session.role) return getUpstreamForRole(config, session.role);
+      return getUpstreamForProfile(config, session.profile);
+    }
+    return null;
   }
 
   function redirect(res, url, status = 302) {
@@ -190,7 +207,13 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
         let role = null;
         let profile = null;
 
-        if (config.mode === 'enterprise') {
+        // Determine sub-mode: in dual mode, state.profile presence signals marketplace flow
+        const isEnterpriseFlow = config.mode === 'enterprise' ||
+          (config.mode === 'dual' && !state.profile);
+        const isMarketplaceFlow = config.mode === 'marketplace' ||
+          (config.mode === 'dual' && !!state.profile);
+
+        if (isEnterpriseFlow) {
           role = resolveRole(userInfo.groups, provider.roleMapping);
           if (!role) {
             return redirect(res, '/login?error=No+role+assigned');
@@ -198,8 +221,7 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
           if (!getUpstreamForRole(config, role)) {
             return redirect(res, `/login?error=No+upstream+for+role+${role}`);
           }
-        } else {
-          // Marketplace: use profile from state, or default
+        } else if (isMarketplaceFlow) {
           profile = state.profile || getDefaultProfile(config);
           if (!profile || !getUpstreamForProfile(config, profile)) {
             return redirect(res, '/login?error=Invalid+profile');
@@ -259,9 +281,17 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
       }
 
       const upstreams = {};
-      const entries = config.mode === 'enterprise'
-        ? Object.entries(config.roles || {}).map(([k, v]) => [k, typeof v === 'string' ? v : v.upstream])
-        : Object.entries(config.profiles || {}).map(([k, v]) => [k, v.upstream]);
+      let entries = [];
+      if (config.mode === 'enterprise' || config.mode === 'dual') {
+        entries = entries.concat(
+          Object.entries(config.roles || {}).map(([k, v]) => [k, typeof v === 'string' ? v : v.upstream])
+        );
+      }
+      if (config.mode === 'marketplace' || config.mode === 'dual') {
+        entries = entries.concat(
+          Object.entries(config.profiles || {}).map(([k, v]) => [k, v.upstream])
+        );
+      }
 
       await Promise.all(entries.map(async ([name, url]) => {
         upstreams[name] = await pingUpstream(url) ? 'up' : 'down';
@@ -309,7 +339,7 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
       if (!isAdmin(config, session)) {
         return json(res, { error: 'Forbidden: admin access required' }, 403);
       }
-      const profileData = config.mode === 'enterprise'
+      const profileData = (config.mode === 'enterprise' || config.mode === 'dual')
         ? listProfiles(config.roles)
         : {};
       const html = renderAdminPage(config, profileData, auditRecent, session);
@@ -324,8 +354,8 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
       const safe = {
         mode: config.mode,
         port: config.port,
-        roles: config.mode === 'enterprise' ? config.roles : undefined,
-        profiles: config.mode === 'marketplace' ? config.profiles : undefined,
+        roles: (config.mode === 'enterprise' || config.mode === 'dual') ? config.roles : undefined,
+        profiles: (config.mode === 'marketplace' || config.mode === 'dual') ? config.profiles : undefined,
         auth: config.auth?.map(a => ({ provider: a.provider, roleMapping: a.roleMapping })),
         admins: config.admins
       };

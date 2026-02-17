@@ -30,7 +30,7 @@ services:
       - "${GATEWAY_PORT:-8422}:8422"
     environment:
       - PORT=8422
-      - GATEWAY_CONFIG={"port":8422,"sessionSecret":"${SESSION_SECRET}","mode":"marketplace","studioUpstream":"http://studio:3000","devMode":true,"devUser":{"email":"dev@test.local","profile":"research-bot"},"auth":[{"provider":"twitter","clientId":"${AUTH_CLIENT_ID:-placeholder}","clientSecret":"${AUTH_CLIENT_SECRET:-placeholder}"}],"profiles":{"research-bot":{"upstream":"http://openclaw-research:18790","token":"${OPENCLAW_TOKEN}","description":"AI Research Assistant","default":true}}}
+      - GATEWAY_CONFIG={"port":8422,"sessionSecret":"${SESSION_SECRET}","mode":"marketplace","studioUpstream":"http://studio:3000","callbackUrl":"${EXTERNAL_URL:-http://localhost:8422}/auth/callback","devMode":true,"devUser":{"email":"dev@test.local","profile":"research-bot"},"auth":[{"provider":"twitter","clientId":"${AUTH_CLIENT_ID:-placeholder}","clientSecret":"${AUTH_CLIENT_SECRET:-placeholder}"}],"profiles":{"research-bot":{"upstream":"http://openclaw-research:18790","token":"${OPENCLAW_TOKEN}","description":"AI Research Assistant","default":true}}}
     depends_on:
       - openclaw-research
       - studio

@@ -428,44 +428,126 @@ export function createRouter({ getConfig, saveConfig, providers, rateLimiter, au
       ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress
     });
 
-    // Inject floating gateway bar for admin users on HTML responses
-    const adminWidget = isAdmin(config, session) ? getAdminWidget(session) : '';
+    // Inject floating gateway bar for all authenticated users
+    const widget = getGatewayWidget(config, session);
 
     proxyHttp(req, res, studioUpstream, {
       'x-forwarded-user': session.email,
       'x-forwarded-role': session.role || '',
       'x-forwarded-groups': (session.groups || []).join(',')
-    }, adminWidget);
+    }, widget);
   }
 
-  function getAdminWidget(session) {
+  function getGatewayWidget(config, session) {
+    const admin = isAdmin(config, session);
+    const displayName = session.name || session.email;
+    const profileOrRole = session.profile || session.role || '';
+    const hasApiKeyPlaceholder = (process.env.ANTHROPIC_API_KEY || '').includes('placeholder');
+
+    const adminLinks = admin
+      ? '<a href="/admin" id="cg-admin-link">Admin Panel</a>' : '';
+    const apiKeyBanner = (admin && hasApiKeyPlaceholder)
+      ? '<div id="cg-banner">Set up your Anthropic API key in <a href="/admin">Admin Panel</a> to start chatting with your agents.</div>' : '';
+    const onboarding = `<div id="cg-onboard">Create AI agents, customize their brain, and share them with friends. <span id="cg-onboard-close">&times;</span></div>`;
+
     return `<script>(function(){
-      var BAR_H = 34;
+      if(document.getElementById('cg-bar'))return;
+      var BAR_H = 38;
+      var style = document.createElement('style');
+      style.textContent = \`
+        #cg-bar {
+          position:fixed;top:0;left:0;right:0;z-index:99999;
+          background:#0d0d0d;border-bottom:1px solid #222;
+          padding:0 16px;display:flex;align-items:center;justify-content:space-between;
+          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+          font-size:13px;color:#aaa;height:\${BAR_H}px;
+        }
+        #cg-bar a { color:#58a6ff;text-decoration:none;font-weight:500; }
+        #cg-bar a:hover { text-decoration:underline; }
+        .cg-left,.cg-right { display:flex;align-items:center;gap:10px; }
+        .cg-brand { font-weight:700;color:#fff;font-size:13px;letter-spacing:-0.3px; }
+        .cg-sep { color:#333; }
+        .cg-user { color:#ccc; }
+        .cg-badge {
+          padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;
+          text-transform:uppercase;letter-spacing:0.5px;
+        }
+        .cg-badge-profile { background:#0d2818;color:#3fb950; }
+        .cg-badge-admin { background:#5c1f1f;color:#ff7b72; }
+        #cg-admin-link { margin-right:4px; }
+        .cg-logout {
+          background:none;border:1px solid #333;color:#888;cursor:pointer;
+          font-size:12px;font-family:inherit;padding:3px 10px;border-radius:6px;
+        }
+        .cg-logout:hover { border-color:#555;color:#ccc; }
+        #cg-banner {
+          position:fixed;top:\${BAR_H}px;left:0;right:0;z-index:99998;
+          background:#1a1400;border-bottom:1px solid #3d3000;
+          color:#f0c000;padding:8px 16px;font-size:13px;text-align:center;
+          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+        }
+        #cg-banner a { color:#58a6ff; }
+        #cg-onboard {
+          position:fixed;top:\${BAR_H}px;left:0;right:0;z-index:99997;
+          background:#0d1a2e;border-bottom:1px solid #1a3050;
+          color:#7eb8f0;padding:8px 16px;font-size:13px;text-align:center;
+          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+        }
+        #cg-onboard-close {
+          cursor:pointer;margin-left:12px;color:#4a7aa8;font-size:16px;
+          vertical-align:middle;
+        }
+        #cg-onboard-close:hover { color:#fff; }
+      \`;
+      document.head.appendChild(style);
+
       var bar = document.createElement('div');
       bar.id = 'cg-bar';
-      bar.innerHTML = '<div style="display:flex;align-items:center;gap:12px;">'
-        + '<span style="font-weight:600;color:#e0e0e0;">ClawGateway</span>'
-        + '<span style="color:#555;">|</span>'
-        + '<span>${session.email}</span>'
-        + '<span style="background:#5c1f1f;color:#ff7b72;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${session.role || session.profile}</span>'
+      bar.innerHTML = '<div class="cg-left">'
+        + '<span class="cg-brand">ClawGateway</span>'
+        + '<span class="cg-sep">|</span>'
+        + '<span class="cg-user">${displayName.replace(/'/g, "\\'")}</span>'
+        + '<span class="cg-badge ${admin ? 'cg-badge-admin' : 'cg-badge-profile'}">${profileOrRole.replace(/'/g, "\\'")}</span>'
         + '</div>'
-        + '<div style="display:flex;align-items:center;gap:12px;">'
-        + '<a href="/admin" style="color:#58a6ff;text-decoration:none;font-weight:500;">Admin Panel</a>'
-        + '<form method="POST" action="/logout" style="margin:0;"><button type="submit" style="background:none;border:none;color:#888;cursor:pointer;font-size:13px;font-family:inherit;">Logout</button></form>'
+        + '<div class="cg-right">'
+        + '${adminLinks}'
+        + '<form method="POST" action="/logout" style="margin:0;"><button type="submit" class="cg-logout">Logout</button></form>'
         + '</div>';
-      bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#111;border-bottom:1px solid #333;padding:5px 16px;display:flex;align-items:center;justify-content:space-between;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;font-size:13px;color:#aaa;height:'+BAR_H+'px;';
       document.body.prepend(bar);
-      // Push everything down: body padding + shift any fixed/sticky elements
-      document.body.style.paddingTop = BAR_H + 'px';
+
+      ${apiKeyBanner ? `
+      var banner = document.createElement('div');
+      banner.id = 'cg-banner';
+      banner.innerHTML = 'Set up your Anthropic API key in <a href="/admin">Admin Panel</a> to start chatting with your agents.';
+      document.body.prepend(banner);
+      ` : ''}
+
+      var onboardKey = 'cg-onboard-dismissed';
+      if (!localStorage.getItem(onboardKey)) {
+        var onboard = document.createElement('div');
+        onboard.id = 'cg-onboard';
+        ${apiKeyBanner ? "onboard.style.top = (BAR_H + 35) + 'px';" : "onboard.style.top = BAR_H + 'px';"}
+        onboard.innerHTML = 'Create AI agents, customize their personality, and share them with anyone. <span id="cg-onboard-close">&times;</span>';
+        document.body.appendChild(onboard);
+        document.getElementById('cg-onboard-close').onclick = function() {
+          onboard.remove();
+          localStorage.setItem(onboardKey, '1');
+        };
+      }
+
+      // Push page content down
+      var totalOffset = BAR_H;
+      ${apiKeyBanner ? 'totalOffset += 35;' : ''}
+      document.body.style.paddingTop = totalOffset + 'px';
       setTimeout(function(){
         document.querySelectorAll('*').forEach(function(el){
           var s = getComputedStyle(el);
-          if ((s.position === 'fixed' || s.position === 'sticky') && el.id !== 'cg-bar') {
+          if ((s.position === 'fixed' || s.position === 'sticky') && el.id !== 'cg-bar' && el.id !== 'cg-banner' && el.id !== 'cg-onboard') {
             var cur = parseInt(s.top) || 0;
-            el.style.top = (cur + BAR_H) + 'px';
+            el.style.top = (cur + totalOffset) + 'px';
           }
         });
-      }, 100);
+      }, 200);
     })();</script>`;
   }
 
